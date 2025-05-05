@@ -20,7 +20,7 @@ class PortfolioDataService {
         container = NSPersistentContainer(name: containerName)
         container.loadPersistentStores { (_, error) in
             if let error = error {
-                print(error.localizedDescription)
+                print("Error loadPersistentStores: ",error.localizedDescription)
             }
             self.getPortfolio()
         }
@@ -43,25 +43,28 @@ class PortfolioDataService {
     }
     
     private func getPortfolio() {
+        print("Getting Portfolio")
         let request =  NSFetchRequest<PortfolioEntity >(entityName: entityName)
         do {
             savedEntities = try container.viewContext.fetch(request)
         } catch let error {
-            print(error.localizedDescription)
+            print("Error getting portfolio: ", error.localizedDescription)
         }
     }
     
     private func add(coin: CoinModel, amount: Double) {
+        print("Adding Coin to Portfolio")
         let entity = PortfolioEntity(context: container.viewContext)
         entity.coinID = coin.id
         entity.amount = amount
     }
     
     private func save() {
+        print("Getting Portfolio")
         do {
             try container.viewContext.save()
         } catch let error {
-            print(error.localizedDescription)
+            print("Error saving portfolio: ",error.localizedDescription)
         }
     }
     
