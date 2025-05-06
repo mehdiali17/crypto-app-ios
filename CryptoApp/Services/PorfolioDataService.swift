@@ -40,10 +40,10 @@ class PortfolioDataService {
         } else {
             add(coin: coin, amount: amount)
         }
+        
     }
     
     private func getPortfolio() {
-        print("Getting Portfolio")
         let request =  NSFetchRequest<PortfolioEntity >(entityName: entityName)
         do {
             savedEntities = try container.viewContext.fetch(request)
@@ -53,14 +53,13 @@ class PortfolioDataService {
     }
     
     private func add(coin: CoinModel, amount: Double) {
-        print("Adding Coin to Portfolio")
         let entity = PortfolioEntity(context: container.viewContext)
         entity.coinID = coin.id
         entity.amount = amount
+        applyChanges()
     }
     
     private func save() {
-        print("Getting Portfolio")
         do {
             try container.viewContext.save()
         } catch let error {
