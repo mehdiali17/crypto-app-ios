@@ -92,16 +92,14 @@ class HomeViewModel: ObservableObject {
             }
             .reduce(0, +)
         
-        var totalCoins: Double = 0
-        
-        var portfolioPercentageChange = portfolioCoins.map { (coin) -> Double in
-            totalCoins = totalCoins + coin.currentHoldingsValue
-            return (coin.priceChangePercentage24H ?? 0) * coin.currentHoldingsValue
+        let previousValue = portfolioCoins.map { (coin) -> Double in
+            let currentValue = coin.currentHoldingsValue
+            return currentValue / (1 + ((coin.priceChangePercentage24H ?? 0) / 100))
         }
             .reduce(0, +)
-        portfolioPercentageChange = portfolioPercentageChange / totalCoins
+        let percentageChange = ((portfolioValue - previousValue) / previousValue) * 100
         
-        let portfolio = StatisticModel(title: "Portfolio Value", value: portfolioValue.asCurrencyWith2Decimals(), percentageChange: portfolioPercentageChange)
+        let portfolio = StatisticModel(title: "Portfolio Value", value: portfolioValue.asCurrencyWith2Decimals(), percentageChange: percentageChange)
         
         stats.append(contentsOf: [
             marketCap,
