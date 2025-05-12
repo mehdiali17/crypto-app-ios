@@ -15,6 +15,7 @@ class HomeViewModel: ObservableObject {
     @Published var allCoins: [CoinModel] = []
     @Published var portfolioCoins: [CoinModel] = []
     @Published var searchText: String = ""
+    @Published var isLoading: Bool = false
     
     private let coinDataService = CoinDataService()
     private let marketDataService = MarketDataService()
@@ -36,14 +37,6 @@ class HomeViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        marketDataService.$marketData
-            .combineLatest($portfolioCoins)
-            .map(getStats)
-            .sink { [weak self] (returnedStats) in
-                self?.statistics = returnedStats
-            }
-            .store(in: &cancellables)
-        
         $allCoins
             .combineLatest(portfolioDataService.$savedEntities)
             .map(mapAllCoinsToPortfolioCoins)
@@ -51,10 +44,27 @@ class HomeViewModel: ObservableObject {
                 self?.portfolioCoins = returnedCoins
             }
             .store(in: &cancellables)
+        
+        marketDataService.$marketData
+            .combineLatest($portfolioCoins)
+            .map(getStats)
+            .sink { [weak self] (returnedStats) in
+                self?.statistics = returnedStats
+                self?.isLoading = false
+            }
+            .store(in: &cancellables)
+        
     }
     
     func updatePortfolio(coin:  CoinModel, amount: Double) {
         portfolioDataService.updatePortfolio(coin: coin , amount: amount)
+    }
+    
+    func reloadData() {
+        isLoading = true
+        coinDataService.getCoins()
+        marketDataService.getMarketData()
+        HapticManager.notification(type: .success)
     }
     
     private func mapAllCoinsToPortfolioCoins(allCoins: [CoinModel], portfolioEntities: [PortfolioEntity]) -> [CoinModel] {
