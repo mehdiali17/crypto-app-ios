@@ -16,11 +16,16 @@ class HomeViewModel: ObservableObject {
     @Published var portfolioCoins: [CoinModel] = []
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
+    @Published var sortOption: sortOption = .holdings
     
     private let coinDataService = CoinDataService()
     private let marketDataService = MarketDataService()
     private let portfolioDataService = PortfolioDataService()
     private var cancellables = Set<AnyCancellable>()
+    
+    enum sortOption {
+        case rank, rankReversed, holdings, holdingsReversed, price, priceReversed
+    }
     
     init() {
         addSubscribers()
@@ -29,9 +34,9 @@ class HomeViewModel: ObservableObject {
     func addSubscribers() {
         
         $searchText
-            .combineLatest(coinDataService.$allCoins)
+            .combineLatest(coinDataService.$allCoins, $sortOption)
             .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
-            .map(filterCoins)
+            .map(filterAndSortCoins)
             .sink { [weak self] (returnedCoins) in
                 self?.allCoins = returnedCoins
             }
@@ -77,6 +82,12 @@ class HomeViewModel: ObservableObject {
             }
     }
     
+    private func filterAndSortCoins(text: String, coins: [CoinModel], sort: sortOption) -> [CoinModel] {
+        var updatedCoins = filterCoins(text: text, coins: coins)
+        sortCoins(sort: sort, coins: &updatedCoins)
+        return updatedCoins
+    }
+    
     private func filterCoins(text: String, coins: [CoinModel]) -> [CoinModel] {
         guard !text.isEmpty else {
             return coins
@@ -84,6 +95,27 @@ class HomeViewModel: ObservableObject {
         let lowerCaseText = text.lowercased()
         return coins.filter { (coin) -> Bool in
             return coin.name.lowercased().contains(lowerCaseText) || coin.symbol.lowercased().contains(lowerCaseText) || coin.id.lowercased().contains(lowerCaseText)
+        }
+    }
+    
+    private func sortCoins(sort: sortOption, coins: inout [CoinModel]) {
+        switch sort {
+        case .rank, .holdings:
+            coins.sort { (coin1, coin2) -> Bool in
+                return coin1.rank < coin2.rank
+            }
+        case .rankReversed, .holdingsReversed:
+            coins.sort { (coin1, coin2) -> Bool in
+                return coin1.rank > coin2.rank
+            }
+        case .price:
+            coins.sort { (coin1, coin2) -> Bool in
+                return coin1.currentPrice > coin2.currentPrice
+            }
+        case .priceReversed:
+            coins.sort { (coin1, coin2) -> Bool in
+                return coin1.currentPrice < coin2.currentPrice
+            }
         }
     }
     
